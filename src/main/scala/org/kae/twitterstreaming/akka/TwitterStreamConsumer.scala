@@ -2,14 +2,15 @@ package org.kae.twitterstreaming.akka
 
 import scala.concurrent.Future
 
-import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model.HttpRequest
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Framing, Source}
+import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import akka.{Done, NotUsed}
+import de.knutwalker.akka.stream.JsonStreamParser
 
 /**
   * Demo app to collect statistics from a Twitter stream.
@@ -19,9 +20,6 @@ object TwitterStreamConsumer
   with RequestSigning
   with RequestBuilding {
 
-  // TODO:
-  //    - parse to JSON
-
   private implicit val system = ActorSystem()
   private implicit val materializer = ActorMaterializer()
 
@@ -29,8 +27,6 @@ object TwitterStreamConsumer
 
   private val streamUrl = "https://stream.twitter.com/1.1/statuses/sample.json" +
     "?stall_warnings=true"
-
-  private val MaximumExpectedLineLength = 40000
 
   consumeResponse(
     signAndSend(
@@ -46,28 +42,23 @@ object TwitterStreamConsumer
 
   private def consumeResponse(
       byteStrings: Source[ByteString, NotUsed]
-  ): Future[Done] =
+  ): Future[Done] = {
+
     byteStrings
-      // Split into lines,
-      .via (
-        Framing.delimiter(
-         ByteString("\r\n"),
-         maximumFrameLength = MaximumExpectedLineLength,
-         allowTruncation = true))
 
-      // This ensures that a failure due to exceeding MaximumExpectedLineLength
-      // will be logged.
-      .log("Twitter stream")
+      // Use JSON parser that can parse a stream of ByteStrings
+      .via {
+        import io.circe.jawn.CirceSupportParser._
+        JsonStreamParser.flow
+      }
 
-      // Convert to strings.
-      .map(_.utf8String)
 
-      .grouped(2)
+      // TODO:
+      // count warnings
+      // skip non tweets
+      .take(1000)
 
       // For now just print.
-      .runForeach(println)
-
-  private def toChars(byteStrings: Source[ByteString, NotUsed]): Source[Char, NotUsed] =
-    byteStrings.mapConcat { _.utf8String.toVector }
-
+      .runForeach(_ => println("got one"))
+  }
 }
