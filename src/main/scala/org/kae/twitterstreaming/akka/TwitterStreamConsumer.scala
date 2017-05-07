@@ -1,5 +1,6 @@
 package org.kae.twitterstreaming.akka
 
+import scala.concurrent.duration._
 import scala.concurrent.Future
 
 import akka.actor.ActorSystem
@@ -11,6 +12,9 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import akka.{Done, NotUsed}
 import de.knutwalker.akka.stream.JsonStreamParser
+import io.circe.jawn.CirceSupportParser
+import org.kae.twitterstreaming.elements.{StallWarning, StreamElement, Tweet, UninterestingStreamElement}
+
 
 /**
   * Demo app to collect statistics from a Twitter stream.
@@ -25,8 +29,9 @@ object TwitterStreamConsumer
 
   import system.dispatcher
 
-  private val streamUrl = "https://stream.twitter.com/1.1/statuses/sample.json" +
-    "?stall_warnings=true"
+  private val streamUrl =
+    "https://stream.twitter.com/1.1/statuses/sample.json" +
+      "?stall_warnings=true"
 
   consumeResponse(
     signAndSend(
@@ -48,17 +53,27 @@ object TwitterStreamConsumer
 
       // Use JSON parser that can parse a stream of ByteStrings
       .via {
-        import io.circe.jawn.CirceSupportParser._
+        import CirceSupportParser._
         JsonStreamParser.flow
       }
+      .async
 
+      .map(StreamElement.apply)
 
       // TODO:
       // count warnings
       // skip non tweets
-      .take(1000)
+      .takeWithin(10.minutes)
+
+      .log("Twitter elements")
 
       // For now just print.
-      .runForeach(_ => println("got one"))
+      .runForeach {
+        case Tweet(_) =>
+
+        case StallWarning => println("Stall warning seen")
+        case UninterestingStreamElement =>
+    }
   }
 }
+
