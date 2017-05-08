@@ -4,6 +4,7 @@ import scala.concurrent.duration._
 import scala.concurrent.Future
 
 import akka.actor.ActorSystem
+import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model.HttpRequest
@@ -33,6 +34,7 @@ object TwitterStreamConsumer
     "https://stream.twitter.com/1.1/statuses/sample.json" +
       "?stall_warnings=true"
 
+
   consumeResponse(
     signAndSend(
       Get(streamUrl)))
@@ -58,7 +60,18 @@ object TwitterStreamConsumer
       }
       .async
 
+      // Classify them.
       .map(StreamElement.apply)
+
+      // TODO: log stall warnings
+
+      // Remove all but tweets.
+      .collect { case t: Tweet => t }
+
+      // Perform digesting in parallel.
+      .mapAsyncUnordered(4) { tweet =>
+        Future.successful(tweet.digest)
+      }
 
       // TODO:
       // count warnings
@@ -68,12 +81,7 @@ object TwitterStreamConsumer
       .log("Twitter elements")
 
       // For now just print.
-      .runForeach {
-        case Tweet(_) =>
-
-        case StallWarning => println("Stall warning seen")
-        case UninterestingStreamElement =>
-    }
+      .runForeach(println)
   }
 }
 
