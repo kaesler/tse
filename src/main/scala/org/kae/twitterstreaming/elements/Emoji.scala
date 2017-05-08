@@ -10,7 +10,7 @@ import com.vdurmont.emoji.EmojiManager
  * @param description its description
  * @param unicodeRepresentation its Unicode representation
  */
-case class Emoji(
+final case class Emoji(
   description: String,
   unicodeRepresentation: String
 )

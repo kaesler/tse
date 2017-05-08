@@ -6,6 +6,7 @@ import scala.collection.mutable.{Map => MMap}
 
 import org.kae.twitterstreaming.elements.{Emoji, HashTag, TweetDigest, UrlDomain}
 
+@SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.MutableDataStructures"))
 /**
  * Methods for calculating cumulative statistics.
  * Contains mutable state and is not thread safe.

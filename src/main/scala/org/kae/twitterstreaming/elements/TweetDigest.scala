@@ -7,7 +7,7 @@ package org.kae.twitterstreaming.elements
  * @param hashTags the hashtags found in the tweet text
  * @param urlDomains the URL domains mentioned
  */
-case class TweetDigest(
+final case class TweetDigest(
     emojis: Set[Emoji],
     hashTags: Set[HashTag],
     urlDomains: Set[UrlDomain]

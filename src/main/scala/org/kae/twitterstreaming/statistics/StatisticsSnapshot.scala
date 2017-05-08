@@ -18,7 +18,7 @@ import org.kae.twitterstreaming.elements.{Emoji, HashTag, UrlDomain}
  * @param topHashtags most popular hashtags
  * @param topUrlDomains most popular URL doains
  */
-case class StatisticsSnapshot(
+final case class StatisticsSnapshot(
     startTime: Instant,
     endTime: Instant,
     totalTweets: Long,

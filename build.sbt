@@ -24,7 +24,10 @@ libraryDependencies ++= Seq(
   "de.knutwalker" %% "akka-http-circe" % "3.3.0",
 
   // For analysis of Json ASTs.
-  "io.circe" %% "circe-optics" % "0.7.0"
+  "io.circe" %% "circe-optics" % "0.7.0",
+
+  "co.fs2" %% "fs2-core" % "0.9.5",
+  "co.fs2" %% "fs2-io" % "0.9.5"
 )
 
 scalacOptions ++= Seq(
@@ -32,4 +35,4 @@ scalacOptions ++= Seq(
     "-deprecation"
 )
 
-// wartremoverWarnings ++= Warts.allBut(Wart.NonUnitStatements, Wart.Overloading)
+wartremoverWarnings ++= Warts.allBut(Wart.Any)

@@ -13,7 +13,7 @@ sealed trait StreamElement
  *
  * @param json the [[Json]]
  */
-case class Tweet(json: Json) extends StreamElement {
+final case class Tweet(json: Json) extends StreamElement {
   def digest: TweetDigest = ???
 }
 
