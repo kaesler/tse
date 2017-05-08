@@ -7,7 +7,7 @@ import scala.collection.mutable.{Map => MMap}
 import org.kae.twitterstreaming.elements.{Emoji, HashTag, TweetDigest, UrlDomain}
 
 /**
- * For calculating cumulative statistics.
+ * Methods for calculating cumulative statistics.
  * Contains mutable state and is not thread safe.
  */
 trait StatisticsAccumulation {
@@ -44,22 +44,24 @@ trait StatisticsAccumulation {
     addOrUpdate(digest.urlDomains, urlDomainOccurrences)
   }
 
-  def statsAsText: String = {
-
-    val secondsSinceStart = (Instant.now.toEpochMilli - startTime.toEpochMilli)/1000
-
-    s"""
-       |Statistics since $startTime:
-       |  Total tweets received: $tweetCount
-       |  Average tweets per second: ${tweetCount / secondsSinceStart}
-       |  Top emojis: $topEmojis
-       |  Tweets containing an emoji: $percentageTweetsContainingEmoji%
-       |  Top hashtags: $topHashtags
-       |  Tweets containing a URL: $percentageTweetsContainingUrl%
-       |  Tweets containing a URL: $percentageTweetsContainingPhoto%
-       |  Top URL domains: $topUrlDomains
-       |
-     """.stripMargin
+  /**
+   * Capture current [[StatisticsSnapshot]].
+   *
+   * @return the [[StatisticsSnapshot]]
+   */
+  def snapshot: StatisticsSnapshot = {
+    StatisticsSnapshot(
+      startTime = startTime,
+      endTime = Instant.now,
+      totalTweets = ???,
+      tweetsPerSecond = ???,
+      emojiPrevalencePercentage = ???,
+      urlPrevalencePercentage = ???,
+      photoPrevalencePercentage = ???,
+      topEmojis = ???,
+      topHashtags = ???,
+      topUrlDomains = ???
+    )
   }
 
   private def addOrUpdate[T](ts: Iterable[T], mm: MMap[T, Long]): Unit = {
