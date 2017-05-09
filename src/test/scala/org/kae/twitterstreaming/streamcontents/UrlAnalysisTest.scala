@@ -33,4 +33,30 @@ class UrlAnalysisTest
       UrlAnalysis.parseAsHttpUrl(s) shouldBe 'defined
     }
   }
+
+  "UrlAnalysis.urlDomain" should "correctly reject invalid cases" in {
+    List(
+      "/kevinesler.com/",
+      "https://.com/",
+      "https://com/"
+
+    ) foreach { s ⇒
+
+      UrlAnalysis.urlDomain(s) shouldBe None
+    }
+  }
+  "UrlAnalysis.urlDomain" should "correctly accept valid cases" in {
+    List(
+      "http://kevinesler.com/"
+
+    ) foreach { s ⇒
+
+      UrlAnalysis.urlDomain(s) shouldBe 'defined
+    }
+  }
+
+  "UrlAnalysis.urlDomain" should "correctly extract the domain part of the hostname" in {
+    UrlAnalysis.urlDomain("http://a.b.c") shouldBe Some(UrlDomain("b.c"))
+    UrlAnalysis.urlDomain("http://1.2.3.4.5.6.7.a.b.c") shouldBe Some(UrlDomain("b.c"))
+  }
 }

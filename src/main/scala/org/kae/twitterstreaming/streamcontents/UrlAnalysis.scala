@@ -41,12 +41,14 @@ trait UrlAnalysis extends TypeCheckedTripleEquals {
       urlDomain ← host match {
 
         case NamedHost(name) ⇒
-          val nameComponents = name.split(".")
+          val nameComponents = name.split("\\.")
           if (nameComponents.length < 2) {
+            None
+          } else if (nameComponents.exists(_.isEmpty)) {
             None
           } else {
             val lastTwo = nameComponents.takeRight(2)
-            Some(UrlDomain(s"${lastTwo(0)},${lastTwo(1)}"))
+            Some(UrlDomain(s"${lastTwo(0)}.${lastTwo(1)}"))
           }
 
         case _ ⇒ None
