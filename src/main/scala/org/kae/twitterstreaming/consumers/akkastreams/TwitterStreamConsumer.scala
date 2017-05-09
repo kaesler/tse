@@ -12,11 +12,9 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import akka.{Done, NotUsed}
-
 import de.knutwalker.akka.stream.JsonStreamParser
 import io.circe.jawn.CirceSupportParser
-import org.kae.twitterstreaming.streamcontents.{StallWarning, StreamElement, Tweet}
-
+import org.kae.twitterstreaming.streamcontents.{StallWarning, StreamElement, Tweet, TweetDigest}
 
 /**
   * Demo app to collect statistics from a Twitter stream.
@@ -37,7 +35,6 @@ object TwitterStreamConsumer
     "https://stream.twitter.com/1.1/statuses/sample.json" +
       "?stall_warnings=true"
 
-
   // TODO: restart if the response terminates.
   consumeResponse(
     signAndSend(
@@ -55,33 +52,7 @@ object TwitterStreamConsumer
       byteStrings: Source[ByteString, NotUsed]
   ): Future[Done] = {
 
-    byteStrings
-
-      // Use JSON parser that can parse a stream of ByteStrings
-      .via {
-        import CirceSupportParser._
-        JsonStreamParser.flow
-      }
-      .async
-
-      // Classify them.
-      .map(StreamElement.apply)
-
-      // Log stall warnings.
-      .map {
-        case StallWarning ⇒
-          logger.warning("Stall warning occurred")
-          StallWarning
-        case other  ⇒ other
-      }
-
-      // Remove all elements except tweets.
-      .collect[Tweet] { case t: Tweet => t }
-
-      // Perform digesting in parallel.
-      .mapAsyncUnordered(4) { tweet =>
-        Future.successful(tweet.digest)
-      }
+    toTweetDigests(byteStrings)
 
       // Run for a finite time.
       .takeWithin(10.minutes)
@@ -92,5 +63,34 @@ object TwitterStreamConsumer
       // For now just print.
       .runForeach(println)
   }
+
+  private def toTweetDigests(
+      byteStrings: Source[ByteString, NotUsed]): Source[TweetDigest, NotUsed] =
+
+    byteStrings
+      // ByteString -> Json
+      .via {
+        import CirceSupportParser._
+        JsonStreamParser.flow
+      }
+
+      // Json -> StreamElement
+      .async
+      .map(StreamElement.apply)
+      // Log any stall warnings.
+      .map {
+        case StallWarning ⇒
+          logger.warning("Stall warning occurred")
+          StallWarning
+        case other ⇒ other
+      }
+
+      // StreamElement ->Tweet
+      .collect[Tweet] { case t: Tweet => t }
+
+      // Tweet -> TweetDigest (in parallel)
+      .mapAsyncUnordered(4) { tweet =>
+        Future.successful(tweet.digest)
+      }
 }
 
