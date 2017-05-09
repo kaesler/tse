@@ -1,7 +1,7 @@
 package org.kae.twitterstreaming.consumers.akkastreams
 
-import scala.concurrent.duration._
 import scala.concurrent.Future
+import scala.concurrent.duration._
 
 import akka.actor.ActorSystem
 import akka.event.Logging
@@ -12,9 +12,10 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import akka.{Done, NotUsed}
+
 import de.knutwalker.akka.stream.JsonStreamParser
 import io.circe.jawn.CirceSupportParser
-import org.kae.twitterstreaming.streamcontents.{StallWarning, StreamElement, Tweet, UninterestingStreamElement}
+import org.kae.twitterstreaming.streamcontents.{StallWarning, StreamElement, Tweet}
 
 
 /**
@@ -75,7 +76,12 @@ object TwitterStreamConsumer
       }
 
       // Remove all elements except tweets.
-      .collect[Tweet] { case t: Tweet => t }
+      .collect[Tweet] { case t: Tweet =>
+        if (t.urlDomains.nonEmpty) {
+          println(t.urlDomains)
+        }
+        t
+      }
 
       // Perform digesting in parallel.
       .mapAsyncUnordered(4) { tweet =>
@@ -87,7 +93,7 @@ object TwitterStreamConsumer
       .log("Twitter elements")
 
       // For now just print.
-      .runForeach(println)
+      .runForeach(_ ⇒ ())
   }
 }
 

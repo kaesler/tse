@@ -1,5 +1,7 @@
 package org.kae.twitterstreaming.streamcontents
 
+import akka.http.scaladsl.model.Uri
+
 import io.circe.Json
 import io.circe.optics.JsonPath._
 
@@ -13,7 +15,15 @@ sealed trait StreamElement
  *
  * @param json the [[Json]]
  */
-final case class Tweet(json: Json) extends StreamElement {
+final case class Tweet(json: Json)
+  extends StreamElement
+  with UrlAnalysis {
+
+  /**
+    * Extract a digest of the tween
+    *
+    * @return the [[TweetDigest]]
+    */
   def digest: TweetDigest = {
     TweetDigest(
       text,
@@ -22,10 +32,34 @@ final case class Tweet(json: Json) extends StreamElement {
       Nil
     )
   }
-  private def text: String = {
+
+  /**
+    * @return the text of the tweet
+    */
+  def text: String = {
     val optic = root.text.string
     optic.getOption(json).getOrElse("")
   }
+
+  /**
+    * @return the URLs in the tweet
+    */
+  def urls: List[Uri] =
+    root.entities.urls.each.expanded_url.string.getAll(json)
+      .flatMap { s ⇒
+        parseAsHttpUrl(s).toList
+      }
+
+  /**
+    * The [[UrlDomain]]s in the tweet.
+    *
+    * @return
+    */
+  def urlDomains: List[UrlDomain] =
+    root.entities.urls.each.expanded_url.string.getAll(json)
+      .flatMap { s ⇒
+        urlDomain(s).toList
+      }
 }
 
 /**
