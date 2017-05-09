@@ -35,12 +35,12 @@ object TwitterStreamConsumer
     "https://stream.twitter.com/1.1/statuses/sample.json" +
       "?stall_warnings=true"
 
-  // TODO: restart if the response terminates.
-  consumeResponse(
-    signAndSend(
-      Get(streamUrl)))
+  consumeResponse(initiateResponse())
     // Note: for we terminate the ActorSystem and process if the response ends.
     .onComplete { _ ⇒ system.terminate() }
+
+  private def initiateResponse(): Source[ByteString, NotUsed] =
+    signAndSend(Get(streamUrl))
 
   private def signAndSend(req: HttpRequest): Source[ByteString, NotUsed] =
     Source.fromFutureSource(
@@ -85,7 +85,7 @@ object TwitterStreamConsumer
         case other ⇒ other
       }
 
-      // StreamElement ->Tweet
+      // StreamElement -> Tweet
       .collect[Tweet] { case t: Tweet => t }
 
       // Tweet -> TweetDigest (in parallel)
