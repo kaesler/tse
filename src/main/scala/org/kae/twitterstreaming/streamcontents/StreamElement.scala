@@ -14,7 +14,18 @@ sealed trait StreamElement
  * @param json the [[Json]]
  */
 final case class Tweet(json: Json) extends StreamElement {
-  def digest: TweetDigest = ???
+  def digest: TweetDigest = {
+    TweetDigest(
+      text,
+      Nil,
+      Nil,
+      Nil
+    )
+  }
+  private def text: String = {
+    val optic = root.text.string
+    optic.getOption(json).getOrElse("")
+  }
 }
 
 /**

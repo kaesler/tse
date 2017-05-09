@@ -30,11 +30,14 @@ object TwitterStreamConsumer
 
   import system.dispatcher
 
+  private val logger = Logging.getLogger(system, this)
+
   private val streamUrl =
     "https://stream.twitter.com/1.1/statuses/sample.json" +
       "?stall_warnings=true"
 
 
+  // TODO: restart if the response terminates.
   consumeResponse(
     signAndSend(
       Get(streamUrl)))
@@ -63,19 +66,22 @@ object TwitterStreamConsumer
       // Classify them.
       .map(StreamElement.apply)
 
-      // TODO: log stall warnings
+      // Log stall warnings.
+      .map {
+        case StallWarning ⇒
+          logger.warning("Stall warning occurred")
+          StallWarning
+        case other  ⇒ other
+      }
 
-      // Remove all but tweets.
-      .collect { case t: Tweet => t }
+      // Remove all elements except tweets.
+      .collect[Tweet] { case t: Tweet => t }
 
       // Perform digesting in parallel.
       .mapAsyncUnordered(4) { tweet =>
         Future.successful(tweet.digest)
       }
 
-      // TODO:
-      // count warnings
-      // skip non tweets
       .takeWithin(10.minutes)
 
       .log("Twitter elements")

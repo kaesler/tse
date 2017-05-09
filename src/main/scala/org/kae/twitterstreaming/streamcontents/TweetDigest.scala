@@ -3,12 +3,14 @@ package org.kae.twitterstreaming.streamcontents
 /**
  * Digest of the content of a tweet.
  *
- * @param emojis the emojis found in the tweet text
- * @param hashTags the hashtags found in the tweet text
- * @param urlDomains the URL domains mentioned
+ * @param emojis the emojis found in the tweet text, duplicates permitted
+ * @param hashTags the hashtags found in the tweet text, duplicates permitted
+ * @param urlDomains the URL domains mentioned, duplicates permitted
  */
 final case class TweetDigest(
-    emojis: Set[Emoji],
-    hashTags: Set[HashTag],
-    urlDomains: Set[UrlDomain]
+    // TODO: remove
+    text: String,
+    emojis: List[Emoji],
+    hashTags: List[HashTag],
+    urlDomains: List[UrlDomain]
 )
