@@ -1,4 +1,4 @@
-package org.kae.twitterstreaming.elements
+package org.kae.twitterstreaming.streamcontents
 
 import scala.collection.JavaConverters._
 

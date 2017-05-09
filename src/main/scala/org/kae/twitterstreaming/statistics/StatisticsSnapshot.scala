@@ -2,7 +2,7 @@ package org.kae.twitterstreaming.statistics
 
 import java.time.Instant
 
-import org.kae.twitterstreaming.elements.{Emoji, HashTag, UrlDomain}
+import org.kae.twitterstreaming.streamcontents.{Emoji, HashTag, UrlDomain}
 
 /**
  * Snapshot of accumulated statistics at a point in time.

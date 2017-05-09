@@ -1,4 +1,4 @@
-package org.kae.twitterstreaming.akka
+package org.kae.twitterstreaming.consumers.akkastreams
 
 import scala.collection.JavaConverters._
 

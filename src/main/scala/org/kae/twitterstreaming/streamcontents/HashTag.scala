@@ -1,3 +1,3 @@
-package org.kae.twitterstreaming.elements
+package org.kae.twitterstreaming.streamcontents
 
 final case class HashTag(asString: String) extends AnyVal

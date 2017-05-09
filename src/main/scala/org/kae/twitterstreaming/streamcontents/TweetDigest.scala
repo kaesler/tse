@@ -1,4 +1,4 @@
-package org.kae.twitterstreaming.elements
+package org.kae.twitterstreaming.streamcontents
 
 /**
  * Digest of the content of a tweet.

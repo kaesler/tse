@@ -1,4 +1,4 @@
-package org.kae.twitterstreaming.akka
+package org.kae.twitterstreaming.consumers.akkastreams
 
 import scala.concurrent.duration._
 import scala.concurrent.Future
@@ -14,7 +14,7 @@ import akka.util.ByteString
 import akka.{Done, NotUsed}
 import de.knutwalker.akka.stream.JsonStreamParser
 import io.circe.jawn.CirceSupportParser
-import org.kae.twitterstreaming.elements.{StallWarning, StreamElement, Tweet, UninterestingStreamElement}
+import org.kae.twitterstreaming.streamcontents.{StallWarning, StreamElement, Tweet, UninterestingStreamElement}
 
 
 /**

@@ -1,4 +1,6 @@
-package org.kae.twitterstreaming.elements
+package org.kae.twitterstreaming.streamcontents
+
+import scala.util.{Failure, Success}
 
 import io.circe.jawn.CirceSupportParser
 import org.scalatest.{FlatSpec, Matchers}
@@ -18,7 +20,10 @@ class StreamElementTest
         |  }
         |}
       """.stripMargin
-    val json = CirceSupportParser.parseFromString(text).get
+    val json = CirceSupportParser.parseFromString(text) match {
+      case Success(j) ⇒ j
+      case Failure(_) ⇒ fail
+    }
     StreamElement.isStallWarning(json) shouldBe true
   }
 
@@ -257,7 +262,10 @@ class StreamElementTest
         |  "created_at": "Sat May 06 15:03:52 +0000 2017"
         |}     
       """.stripMargin
-    val json = CirceSupportParser.parseFromString(text).get
+    val json = CirceSupportParser.parseFromString(text) match {
+      case Success(j) ⇒ j
+      case Failure(_) ⇒ fail
+    }
     StreamElement.isTweet(json) shouldBe true
   }
 }

@@ -4,7 +4,7 @@ import java.time.Instant
 
 import scala.collection.mutable.{Map => MMap}
 
-import org.kae.twitterstreaming.elements.{Emoji, HashTag, TweetDigest, UrlDomain}
+import org.kae.twitterstreaming.streamcontents.{Emoji, HashTag, TweetDigest, UrlDomain}
 
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.MutableDataStructures"))
 /**
