@@ -76,22 +76,21 @@ object TwitterStreamConsumer
       }
 
       // Remove all elements except tweets.
-      .collect[Tweet] { case t: Tweet =>
-      if (t.hashTags.nonEmpty) println(t.hashTags)
-        t
-    }
+      .collect[Tweet] { case t: Tweet => t }
 
       // Perform digesting in parallel.
       .mapAsyncUnordered(4) { tweet =>
         Future.successful(tweet.digest)
       }
 
+      // Run for a finite time.
       .takeWithin(10.minutes)
 
+      // Ensure helpful error logging.
       .log("Twitter elements")
 
       // For now just print.
-      .runForeach(_ ⇒ ())
+      .runForeach(println)
   }
 }
 

@@ -8,8 +8,6 @@ package org.kae.twitterstreaming.streamcontents
  * @param urlDomains the URL domains mentioned, duplicates permitted
  */
 final case class TweetDigest(
-    // TODO: remove
-    text: String,
     emojis: List[Emoji],
     hashTags: List[HashTag],
     urlDomains: List[UrlDomain]

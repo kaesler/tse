@@ -1,7 +1,10 @@
 package org.kae.twitterstreaming.streamcontents
 
+import scala.collection.JavaConverters._
+
 import akka.http.scaladsl.model.Uri
 
+import com.vdurmont.emoji.EmojiParser
 import io.circe.Json
 import io.circe.optics.JsonPath._
 
@@ -26,8 +29,7 @@ final case class Tweet(json: Json)
     */
   def digest: TweetDigest = {
     TweetDigest(
-      text,
-      Nil,
+      emojis,
       hashTags,
       urlDomains
     )
@@ -51,21 +53,28 @@ final case class Tweet(json: Json)
       }
 
   /**
-    * The [[UrlDomain]]s in the tweet.
-    *
-    * @return
+    * @return the [[UrlDomain]]s in the tweet.
     */
-  def urlDomains: List[UrlDomain] =
-    root.entities.urls.each.expanded_url.string.getAll(json)
-      .flatMap { s ⇒
-        urlDomain(s).toList
-      }
+  def urlDomains: List[UrlDomain] = for {
+    s ← root.entities.urls.each.expanded_url.string.getAll(json)
+    domain ← urlDomain(s).toList
+  } yield domain
 
-  def hashTags: List[HashTag] = {
-    root.entities.hashtags.each.text.string.getAll(json)
-      .filter(_.nonEmpty)
-      .map(HashTag.apply)
-  }
+  /**
+    * @return the [[HashTag]]s in the tweet
+    */
+  def hashTags: List[HashTag] = for {
+    s ← root.entities.hashtags.each.text.string.getAll(json)
+    if s.nonEmpty
+  } yield HashTag(s)
+
+  /**
+    * @return the [[Emoji]]s in the tweet
+    */
+  def emojis: List[Emoji] = for {
+    s ← EmojiParser.extractEmojis(text).asScala.toList
+    emoji ← Emoji.get(s).toList
+  } yield emoji
 }
 
 /**
