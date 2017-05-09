@@ -28,8 +28,8 @@ final case class Tweet(json: Json)
     TweetDigest(
       text,
       Nil,
-      Nil,
-      Nil
+      hashTags,
+      urlDomains
     )
   }
 
@@ -60,6 +60,12 @@ final case class Tweet(json: Json)
       .flatMap { s ⇒
         urlDomain(s).toList
       }
+
+  def hashTags: List[HashTag] = {
+    root.entities.hashtags.each.text.string.getAll(json)
+      .filter(_.nonEmpty)
+      .map(HashTag.apply)
+  }
 }
 
 /**

@@ -77,11 +77,9 @@ object TwitterStreamConsumer
 
       // Remove all elements except tweets.
       .collect[Tweet] { case t: Tweet =>
-        if (t.urlDomains.nonEmpty) {
-          println(t.urlDomains)
-        }
+      if (t.hashTags.nonEmpty) println(t.hashTags)
         t
-      }
+    }
 
       // Perform digesting in parallel.
       .mapAsyncUnordered(4) { tweet =>
