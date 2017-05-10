@@ -14,8 +14,10 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import akka.{Done, NotUsed}
+
 import de.knutwalker.akka.stream.JsonStreamParser
 import io.circe.jawn.CirceSupportParser
+import org.kae.twitterstreaming.credentials.TwitterCredentialsProvider
 import org.kae.twitterstreaming.statistics.StatisticsAccumulator
 import org.kae.twitterstreaming.streamcontents.{StallWarning, StreamElement, Tweet, TweetDigest}
 
@@ -27,6 +29,9 @@ object AppUsingAkkaStreams
   extends App
   with RequestSigning
   with RequestBuilding {
+
+  // Note: fail here early and hard if no credentials.
+  private val creds = TwitterCredentialsProvider.required()
 
   private implicit val system = ActorSystem()
   private implicit val materializer = ActorMaterializer()
@@ -67,7 +72,7 @@ object AppUsingAkkaStreams
 
   private def signAndSend(req: HttpRequest): Source[ByteString, NotUsed] =
     Source.fromFutureSource(
-      Http().singleRequest(sign(req))
+      Http().singleRequest(sign(req, creds))
         .map(_.entity.dataBytes))
       .mapMaterializedValue(_ ⇒ NotUsed)
 
