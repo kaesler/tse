@@ -1,5 +1,7 @@
 package org.kae.twitterstreaming.consumers.akkastreams
 
+import java.time.Instant
+
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
@@ -14,12 +16,14 @@ import akka.util.ByteString
 import akka.{Done, NotUsed}
 import de.knutwalker.akka.stream.JsonStreamParser
 import io.circe.jawn.CirceSupportParser
+import org.kae.twitterstreaming.statistics.StatisticsAccumulator
 import org.kae.twitterstreaming.streamcontents.{StallWarning, StreamElement, Tweet, TweetDigest}
 
 /**
-  * Demo app to collect statistics from a Twitter stream.
-  */
-object TwitterStreamConsumer
+ * Demo app to collect statistics from a Twitter stream using Akka HTTP and
+ * Akka Streams
+ */
+object AppUsingAkkaStreams
   extends App
   with RequestSigning
   with RequestBuilding {
@@ -35,9 +39,14 @@ object TwitterStreamConsumer
     "https://stream.twitter.com/1.1/statuses/sample.json" +
       "?stall_warnings=true"
 
+  private val accumulator = new StatisticsAccumulator(Instant.now)
+
   consumeResponse(initiateResponse())
     // Note: for we terminate the ActorSystem and process if the response ends.
-    .onComplete { _ ⇒ system.terminate() }
+    .onComplete { _ ⇒
+      println(accumulator.snapshot.asText)
+      system.terminate()
+    }
 
   private def initiateResponse(): Source[ByteString, NotUsed] =
     signAndSend(Get(streamUrl))
@@ -55,13 +64,13 @@ object TwitterStreamConsumer
     toTweetDigests(byteStrings)
 
       // Run for a finite time.
-      .takeWithin(10.minutes)
+      .takeWithin(1.minutes)
 
       // Ensure helpful error logging.
       .log("Twitter elements")
 
       // For now just print.
-      .runForeach(println)
+      .runForeach { digest => accumulator.accumulate(digest) }
   }
 
   private def toTweetDigests(

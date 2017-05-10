@@ -29,6 +29,7 @@ final case class Tweet(json: Json)
     */
   def digest: TweetDigest = {
     TweetDigest(
+      urls,
       emojis,
       hashTags,
       urlDomains,

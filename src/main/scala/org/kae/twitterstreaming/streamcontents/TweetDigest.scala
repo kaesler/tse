@@ -1,5 +1,7 @@
 package org.kae.twitterstreaming.streamcontents
 
+import akka.http.scaladsl.model.Uri
+
 /**
  * Digest of the content of a tweet.
  *
@@ -9,6 +11,7 @@ package org.kae.twitterstreaming.streamcontents
  * @param hasPhoto has a URL to a photo
  */
 final case class TweetDigest(
+    uris: List[Uri],
     emojis: List[Emoji],
     hashTags: List[HashTag],
     urlDomains: List[UrlDomain],

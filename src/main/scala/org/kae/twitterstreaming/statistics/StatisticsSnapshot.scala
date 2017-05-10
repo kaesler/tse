@@ -23,24 +23,24 @@ final case class StatisticsSnapshot(
     endTime: Instant,
     totalTweets: Long,
     tweetsPerSecond: Int,
-    emojiPrevalencePercentage: Int,
-    urlPrevalencePercentage: Int,
-    photoPrevalencePercentage: Int,
+    emojiPrevalencePercentage: Double,
+    urlPrevalencePercentage: Double,
+    photoPrevalencePercentage: Double,
     topEmojis: List[Emoji],
     topHashtags: List[HashTag],
     topUrlDomains: List[UrlDomain]
 ) {
   def asText: String = {
 
-    s"""
+    f"""
        |Statistics from $startTime to $endTime:
        |  Total tweets received: $totalTweets
        |  Average tweets per second: $tweetsPerSecond
        |  Top emojis: ${topEmojis.map(_.description).mkString(",")}
-       |  Tweets containing an emoji: $emojiPrevalencePercentage%
+       |  Tweets containing an emoji: $emojiPrevalencePercentage%.2f%%
        |  Top hashtags: ${topHashtags.map(_.asString).mkString(",")}
-       |  Tweets containing a URL: $urlPrevalencePercentage%
-       |  Tweets containing a photo: $photoPrevalencePercentage%
+       |  Tweets containing a URL: $urlPrevalencePercentage%.2f%%
+       |  Tweets containing a photo: $photoPrevalencePercentage%.2f%%
        |  Top URL domains: ${topUrlDomains.map(_.asString).mkString(",")}
        |
      """.stripMargin

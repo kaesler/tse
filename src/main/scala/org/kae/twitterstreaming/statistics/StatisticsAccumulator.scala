@@ -63,13 +63,13 @@ class StatisticsAccumulator(startTime: Instant) {
       tweetsPerSecond = (tweetCount/secondsElapsed).toInt,
 
       emojiPrevalencePercentage =
-        ((tweetsContainingEmoji * 100)/tweetCount).toInt,
+        (tweetsContainingEmoji * 100.0)/tweetCount,
 
       urlPrevalencePercentage =
-        ((tweetsContainingUrl * 100)/tweetCount).toInt,
+        (tweetsContainingUrl * 100.0)/tweetCount,
 
       photoPrevalencePercentage =
-          ((tweetsContainingPhotoUrl * 100)/tweetCount).toInt,
+        (tweetsContainingPhotoUrl * 100.0)/tweetCount,
 
       topEmojis = topTenEntities(emojiOccurrences),
       topHashtags = topTenEntities(hashTagOccurrences),
