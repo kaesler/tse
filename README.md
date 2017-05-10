@@ -1,1 +1,1 @@
-Eexperments consuming a Twitter stream.
+Experiments consuming a Twitter stream.
