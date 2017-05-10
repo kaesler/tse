@@ -1,4 +1,4 @@
-name := "tsefb"
+name := "tse"
 
 version := "1.0"
 
