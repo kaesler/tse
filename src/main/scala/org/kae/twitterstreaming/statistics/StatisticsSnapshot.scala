@@ -1,6 +1,7 @@
 package org.kae.twitterstreaming.statistics
 
-import java.time.Instant
+import java.time.temporal.ChronoUnit
+import java.time.{Instant, ZoneId}
 
 import org.kae.twitterstreaming.streamcontents.{Emoji, HashTag, UrlDomain}
 
@@ -30,10 +31,12 @@ final case class StatisticsSnapshot(
     topHashtags: List[HashTag],
     topUrlDomains: List[UrlDomain]
 ) {
+  import StatisticsSnapshot._
   def asText: String = {
 
+    val secondsElapsed = startTime.until(endTime, ChronoUnit.SECONDS)
     f"""
-       |Statistics from $startTime to $endTime:
+       |Statistics for $secondsElapsed seconds from ${startTime.atZone(tz).toLocalTime} to ${endTime.atZone(tz).toLocalTime}:
        |  Total tweets received: $totalTweets
        |  Average tweets per second: $tweetsPerSecond
        |  Top emojis: ${topEmojis.map(_.description).mkString(",")}
@@ -42,7 +45,11 @@ final case class StatisticsSnapshot(
        |  Tweets containing a URL: $urlPrevalencePercentage%.2f%%
        |  Tweets containing a photo: $photoPrevalencePercentage%.2f%%
        |  Top URL domains: ${topUrlDomains.map(_.asString).mkString(",")}
-       |
      """.stripMargin
   }
 }
+
+object StatisticsSnapshot {
+  private val tz = ZoneId.systemDefault()
+}
+
