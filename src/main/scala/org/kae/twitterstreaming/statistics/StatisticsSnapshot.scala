@@ -39,12 +39,12 @@ final case class StatisticsSnapshot(
        |Statistics for $secondsElapsed seconds from ${startTime.atZone(tz).toLocalTime} to ${endTime.atZone(tz).toLocalTime}:
        |  Total tweets received: $totalTweets
        |  Average tweets per second: $tweetsPerSecond
-       |  Top emojis: ${topEmojis.map(_.description).mkString(",")}
+       |  Top emojis: ${topEmojis.map(_.description).mkString("\n    ","\n    ", "")}
        |  Tweets containing an emoji: $emojiPrevalencePercentage%.2f%%
-       |  Top hashtags: ${topHashtags.map(_.asString).mkString(",")}
+       |  Top hashtags: ${topHashtags.map(_.asString).mkString("\n    ","\n    ", "")}
        |  Tweets containing a URL: $urlPrevalencePercentage%.2f%%
        |  Tweets containing a photo: $photoPrevalencePercentage%.2f%%
-       |  Top URL domains: ${topUrlDomains.map(_.asString).mkString(",")}
+       |  Top URL domains: ${topUrlDomains.map(_.asString).mkString("\n    ","\n    ", "")}
      """.stripMargin
   }
 }
