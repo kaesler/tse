@@ -55,6 +55,22 @@ trait UrlAnalysis extends TypeCheckedTripleEquals {
       }
     } yield urlDomain
   }
+
+  /**
+   * Test if a Uri refers to a photo.
+   *
+   * @param uri the [[Uri]]
+   * @return true iff it refers to one of the Twitter repositories
+   */
+  def refersToPhoto(uri: Uri): Boolean = {
+    uri.authority.host.toOption match {
+      case None => false
+
+      case Some(neh) =>
+        val address = neh.address()
+        address === "pic.twitter.com" || address === "www.instagram.com"
+    }
+  }
 }
 
 object UrlAnalysis extends UrlAnalysis

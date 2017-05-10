@@ -31,7 +31,8 @@ final case class Tweet(json: Json)
     TweetDigest(
       emojis,
       hashTags,
-      urlDomains
+      urlDomains,
+      containsPhotoReference
     )
   }
 
@@ -51,6 +52,11 @@ final case class Tweet(json: Json)
       .flatMap { s ⇒
         parseAsHttpUrl(s).toList
       }
+
+  /**
+   * @return true iff the Tweet contains a URL that refers to a photo
+   */
+  def containsPhotoReference: Boolean = urls exists refersToPhoto
 
   /**
     * @return the [[UrlDomain]]s in the tweet.

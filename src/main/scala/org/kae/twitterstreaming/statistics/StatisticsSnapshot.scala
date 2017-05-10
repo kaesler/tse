@@ -26,9 +26,9 @@ final case class StatisticsSnapshot(
     emojiPrevalencePercentage: Int,
     urlPrevalencePercentage: Int,
     photoPrevalencePercentage: Int,
-    topEmojis: Seq[Emoji],
-    topHashtags: Seq[HashTag],
-    topUrlDomains: Seq[UrlDomain]
+    topEmojis: List[Emoji],
+    topHashtags: List[HashTag],
+    topUrlDomains: List[UrlDomain]
 ) {
   def asText: String = {
 

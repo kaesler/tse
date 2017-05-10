@@ -6,9 +6,11 @@ package org.kae.twitterstreaming.streamcontents
  * @param emojis the emojis found in the tweet text, duplicates permitted
  * @param hashTags the hashtags found in the tweet text, duplicates permitted
  * @param urlDomains the URL domains mentioned, duplicates permitted
+ * @param hasPhoto has a URL to a photo
  */
 final case class TweetDigest(
     emojis: List[Emoji],
     hashTags: List[HashTag],
-    urlDomains: List[UrlDomain]
+    urlDomains: List[UrlDomain],
+    hasPhoto: Boolean
 )

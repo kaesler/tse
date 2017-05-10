@@ -1,19 +1,18 @@
 package org.kae.twitterstreaming.statistics
 
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 import scala.collection.mutable.{Map => MMap}
 
 import org.kae.twitterstreaming.streamcontents.{Emoji, HashTag, TweetDigest, UrlDomain}
 
-@SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.MutableDataStructures"))
 /**
- * Methods for calculating cumulative statistics.
- * Contains mutable state and is not thread safe.
+ * Mutable class in which to accumulate statistics,
+ * Not thread-safe.
  */
-trait StatisticsAccumulation {
-
-  def startTime: Instant
+@SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.MutableDataStructures"))
+class StatisticsAccumulator(startTime: Instant) {
 
   private var tweetCount = 0L
   private var tweetsContainingEmoji = 0L
@@ -40,6 +39,10 @@ trait StatisticsAccumulation {
       tweetsContainingUrl += 1
     }
 
+    if (digest.hasPhoto) {
+      tweetsContainingPhotoUrl += 1
+    }
+
     addOrUpdate(digest.emojis, emojiOccurrences)
     addOrUpdate(digest.hashTags, hashTagOccurrences)
     addOrUpdate(digest.urlDomains, urlDomainOccurrences)
@@ -51,18 +54,35 @@ trait StatisticsAccumulation {
    * @return the [[StatisticsSnapshot]]
    */
   def snapshot: StatisticsSnapshot = {
+    val secondsElapsed = startTime.until(Instant.now, ChronoUnit.SECONDS)
     StatisticsSnapshot(
       startTime = startTime,
       endTime = Instant.now,
-      totalTweets = ???,
-      tweetsPerSecond = ???,
-      emojiPrevalencePercentage = ???,
-      urlPrevalencePercentage = ???,
-      photoPrevalencePercentage = ???,
-      topEmojis = ???,
-      topHashtags = ???,
-      topUrlDomains = ???
+      totalTweets = tweetCount,
+
+      tweetsPerSecond = (tweetCount/secondsElapsed).toInt,
+
+      emojiPrevalencePercentage =
+        ((tweetsContainingEmoji * 100)/tweetCount).toInt,
+
+      urlPrevalencePercentage =
+        ((tweetsContainingUrl * 100)/tweetCount).toInt,
+
+      photoPrevalencePercentage =
+          ((tweetsContainingPhotoUrl * 100)/tweetCount).toInt,
+
+      topEmojis = topTenEntities(emojiOccurrences),
+      topHashtags = topTenEntities(hashTagOccurrences),
+      topUrlDomains = topTenEntities(urlDomainOccurrences)
     )
+  }
+
+  private def topTenEntities[E](map: MMap[E, Long]): List[E] = {
+    map
+      .toList
+      .sortBy(- _._2)
+      .take(10)
+      .map(_._1)
   }
 
   private def addOrUpdate[T](ts: Iterable[T], mm: MMap[T, Long]): Unit = {
@@ -76,12 +96,4 @@ trait StatisticsAccumulation {
       }
     }
   }
-
-  private def topEmojis: String = ???
-  private def topHashtags: String = ???
-  private def topUrlDomains: String = ???
-
-  private def percentageTweetsContainingEmoji: Int = ???
-  private def percentageTweetsContainingUrl: Int = ???
-  private def percentageTweetsContainingPhoto: Int = ???
 }
