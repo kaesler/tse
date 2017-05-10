@@ -48,7 +48,7 @@ final case class StatisticsSnapshot(
        |  Average tweets per second: $tweetsPerSecond
        |  Top emojis: $topEmojisText
        |  Tweets containing an emoji: $emojiPrevalencePercentage%.2f%%
-       |  Top hashtags: ${topHashtags.map(_.asString).mkString("\n    ","\n    ", "")}
+       |  Top hashtags: ${topHashtags.map(tag ⇒ "#" + tag.asString).mkString("\n    ","\n    ", "")}
        |  Tweets containing a URL: $urlPrevalencePercentage%.2f%%
        |  Tweets containing a photo: $photoPrevalencePercentage%.2f%%
        |  Top URL domains: ${topUrlDomains.map(_.asString).mkString("\n    ","\n    ", "")}

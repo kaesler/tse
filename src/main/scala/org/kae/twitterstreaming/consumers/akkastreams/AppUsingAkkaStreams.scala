@@ -39,23 +39,28 @@ object AppUsingAkkaStreams
     "https://stream.twitter.com/1.1/statuses/sample.json" +
       "?stall_warnings=true"
 
+  private val TimeBetweenStatsReports = 15.seconds
+
   // Note: this is here outside the pipeline so that it will persist across
   // restarts of the pipeline due to network glitches.
   private val accumulator = new StatisticsAccumulator(Instant.now)
-  private val TimeBetweenStatsReports = 15.seconds
 
-  consumeResponse(initiateResponse())
-    .recoverWith {
-      // Note: recover from network interruptions by obtaining a fresh response
-      // stream.
-      case ese: EntityStreamException
-        if ese.getMessage === "Entity stream truncation" =>
-        logger.warning("Recovering from response truncation")
-        consumeResponse(initiateResponse())
-    }
+  runFreshPipeline()
     // Note: terminate the ActorSystem and process if the response ends for
     // any other reason.
     .onComplete { _ ⇒ system.terminate() }
+
+  private def runFreshPipeline(): Future[Done] = {
+    consumeResponse(initiateResponse())
+      .recoverWith {
+        // Note:  recover from network interruptions by running a freshly
+        // created pipeline.
+        case ese: EntityStreamException
+          if ese.getMessage === "Entity stream truncation" =>
+          logger.warning("Recovering from response truncation")
+          runFreshPipeline()
+      }
+  }
 
   private def initiateResponse(): Source[ByteString, NotUsed] =
     signAndSend(Get(streamUrl))
