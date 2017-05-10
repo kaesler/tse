@@ -14,9 +14,12 @@ import org.kae.twitterstreaming.streamcontents.TweetDigest
  * [[TweetDigest]]s derived from a Twitter stream, and emits a stream of
  * [[StatisticsSnapshot]]s at a configurable output cadence.
  *
- * @param periodBetweenOutputs time between outouts
+ * @param accumulator the [[StatisticsAccumulator]] to update
+ * @param periodBetweenOutputs time between outputs
  */
-class AccumulateStatistics (periodBetweenOutputs: FiniteDuration)
+class AccumulateStatistics (
+    accumulator: StatisticsAccumulator,
+    periodBetweenOutputs: FiniteDuration)
   extends GraphStage[FlowShape[TweetDigest, StatisticsSnapshot]] {
 
   private val in = Inlet[TweetDigest]("AccumulateStatistics.in")
@@ -28,15 +31,13 @@ class AccumulateStatistics (periodBetweenOutputs: FiniteDuration)
   override def createLogic(attr: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) {
 
-      private val accumulator = new StatisticsAccumulator(Instant.now)
-
       var timerSet = false
 
       setHandler(
         in,
         new InHandler {
           override def onPush(): Unit = {
-            // First time through set the timer for scheduling outputs
+            // First time through only, set the timer for scheduling outputs.
             if (! timerSet) {
               timerSet = true
               schedulePeriodically((), periodBetweenOutputs)

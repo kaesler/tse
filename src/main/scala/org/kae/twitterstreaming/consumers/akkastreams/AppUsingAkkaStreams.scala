@@ -1,5 +1,7 @@
 package org.kae.twitterstreaming.consumers.akkastreams
 
+import java.time.Instant
+
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
@@ -7,14 +9,14 @@ import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
-import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.model.{EntityStreamException, HttpRequest}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import akka.{Done, NotUsed}
 import de.knutwalker.akka.stream.JsonStreamParser
 import io.circe.jawn.CirceSupportParser
-
+import org.kae.twitterstreaming.statistics.StatisticsAccumulator
 import org.kae.twitterstreaming.streamcontents.{StallWarning, StreamElement, Tweet, TweetDigest}
 
 /**
@@ -37,10 +39,22 @@ object AppUsingAkkaStreams
     "https://stream.twitter.com/1.1/statuses/sample.json" +
       "?stall_warnings=true"
 
-  private val TimeBetweenStatisticsReports = 15.seconds
+  // Note: this is here outside the pipeline so that it will persist across
+  // restarts of the pipeline due to network glitches.
+  private val accumulator = new StatisticsAccumulator(Instant.now)
+  private val TimeBetweenStatsReports = 15.seconds
 
   consumeResponse(initiateResponse())
-    // Note: for we terminate the ActorSystem and process if the response ends.
+    .recoverWith {
+      // Note: recover from network interruptions by obtaining a fresh response
+      // stream.
+      case ese: EntityStreamException
+        if ese.getMessage === "Entity stream truncation" =>
+        logger.warning("Recovering from response truncation")
+        consumeResponse(initiateResponse())
+    }
+    // Note: terminate the ActorSystem and process if the response ends for
+    // any other reason.
     .onComplete { _ ⇒ system.terminate() }
 
   private def initiateResponse(): Source[ByteString, NotUsed] =
@@ -60,7 +74,7 @@ object AppUsingAkkaStreams
     toTweetDigests(byteStrings)
 
       // TweetDigest -> StatisticsSnapshot
-      .via(new AccumulateStatistics(TimeBetweenStatisticsReports))
+      .via(new AccumulateStatistics(accumulator,TimeBetweenStatsReports)).async
 
       // Run for a finite time.
       .takeWithin(3.minutes)
@@ -81,11 +95,10 @@ object AppUsingAkkaStreams
       .via {
         import CirceSupportParser._
         JsonStreamParser.flow
-      }
+      }.async
 
       // Json -> StreamElement
-      .async
-      .map(StreamElement.apply)
+      .map(StreamElement.apply).async
       // Log any stall warnings.
       .map {
         case StallWarning ⇒

@@ -11,7 +11,10 @@ import org.kae.twitterstreaming.streamcontents.{Emoji, HashTag, TweetDigest, Url
  * Mutable class in which to accumulate statistics,
  * Not thread-safe.
  */
-@SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.MutableDataStructures"))
+@SuppressWarnings(
+  Array(
+    "org.wartremover.warts.Var",
+    "org.wartremover.warts.MutableDataStructures"))
 class StatisticsAccumulator(startTime: Instant) {
 
   private var tweetCount = 0L

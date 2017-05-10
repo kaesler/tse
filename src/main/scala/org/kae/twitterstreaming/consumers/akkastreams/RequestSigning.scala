@@ -13,19 +13,19 @@ import com.github.scribejava.core.builder.ServiceBuilder
 import com.github.scribejava.core.model.{OAuth1AccessToken, OAuthRequest, Verb}
 
 /**
-  * Signing Twitter requests by delegating to the Scribe library.
-  */
+ * Signing Twitter requests by delegating to the Scribe library.
+ */
 trait RequestSigning
   extends TypeCheckedTripleEquals {
   import RequestSigning._
 
   /**
-    * Sign an [[HttpRequest]] for Twitter by creating an equivalent [[OAuthRequest]],
-    * signing it with Scribe, and adding the auth header produced to the [[HttpRequest]].
-    *
-    * @param req the [[HttpRequest]]
-    * @return a new signed [[HttpRequest]]
-    */
+   * Sign an [[HttpRequest]] for Twitter by creating an equivalent [[OAuthRequest]],
+   * signing it with Scribe, and adding the auth header produced to the [[HttpRequest]].
+   *
+   * @param req the [[HttpRequest]]
+   * @return a new signed [[HttpRequest]]
+   */
   protected def sign(req: HttpRequest): HttpRequest = {
 
     val AuthHeaderName = Authorization.name

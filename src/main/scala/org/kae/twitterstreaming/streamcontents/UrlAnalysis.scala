@@ -10,16 +10,17 @@ import org.scalactic.TypeCheckedTripleEquals
 trait UrlAnalysis extends TypeCheckedTripleEquals {
 
   /**
-    * Try to parse a string to a Uri of the expected kind.
-    *
-    * @param s the string
-    * @return a Uri, or None
-    */
+   * Try to parse a string to a Uri of the expected kind.
+   *
+   * @param s the string
+   * @return a Uri, or None
+   */
   def parseAsHttpUrl(s: String): Option[Uri] = {
     for {
       uri <- Try { Uri(s) }.toOption
       httpUri ← {
-        if (uri.scheme === Uri.httpScheme(false)  || uri.scheme === Uri.httpScheme(true)) {
+        if (uri.scheme === Uri.httpScheme(false) ||
+          uri.scheme === Uri.httpScheme(true)) {
           Some(uri)
         } else {
           None
@@ -29,11 +30,12 @@ trait UrlAnalysis extends TypeCheckedTripleEquals {
   }
 
   /**
-    * Try to extract a URL domain from a string after first trying to interpret it as an HTTP URL.
-    *
-    * @param s the string
-    * @return the [[UrlDomain]] if it can be found, or None
-    */
+   * Try to extract a URL domain from a string after first trying to interpret
+   * it as an HTTP URL.
+   *
+   * @param s the string
+   * @return the [[UrlDomain]] if it can be found, or None
+   */
   def urlDomain(s: String): Option[UrlDomain] = {
     for {
       uri ← parseAsHttpUrl(s)

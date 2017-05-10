@@ -2,6 +2,7 @@ package org.kae.twitterstreaming.streamcontents
 
 import org.scalatest.{FlatSpec, Matchers}
 
+@SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
 class UrlAnalysisTest
   extends FlatSpec
   with Matchers {

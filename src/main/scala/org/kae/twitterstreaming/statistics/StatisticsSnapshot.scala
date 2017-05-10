@@ -32,14 +32,21 @@ final case class StatisticsSnapshot(
     topUrlDomains: List[UrlDomain]
 ) {
   import StatisticsSnapshot._
+
   def asText: String = {
 
     val secondsElapsed = startTime.until(endTime, ChronoUnit.SECONDS)
+    val topEmojisText = topEmojis
+      .map { emoji =>
+        s"'${emoji.unicodeRepresentation}': ${emoji.description}"
+      }
+      .mkString("\n    ","\n    ", "")
+
     f"""
        |Statistics for $secondsElapsed seconds from ${startTime.atZone(tz).toLocalTime} to ${endTime.atZone(tz).toLocalTime}:
        |  Total tweets received: $totalTweets
        |  Average tweets per second: $tweetsPerSecond
-       |  Top emojis: ${topEmojis.map(_.description).mkString("\n    ","\n    ", "")}
+       |  Top emojis: $topEmojisText
        |  Tweets containing an emoji: $emojiPrevalencePercentage%.2f%%
        |  Top hashtags: ${topHashtags.map(_.asString).mkString("\n    ","\n    ", "")}
        |  Tweets containing a URL: $urlPrevalencePercentage%.2f%%
