@@ -1,11 +1,10 @@
 package org.kae.twitterstreaming.consumers.akkastreams
 
-import java.time.Instant
-
 import scala.concurrent.duration.FiniteDuration
 
-import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler, TimerGraphStageLogic}
+import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
+
 import org.kae.twitterstreaming.statistics.{StatisticsAccumulator, StatisticsSnapshot}
 import org.kae.twitterstreaming.streamcontents.TweetDigest
 

@@ -6,11 +6,12 @@ import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.{Authorization, RawHeader}
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
 
-import org.scalactic.TypeCheckedTripleEquals
 import com.github.scribejava.apis.TwitterApi
 import com.github.scribejava.core.builder.ServiceBuilder
 import com.github.scribejava.core.model.{OAuth1AccessToken, OAuthRequest, Verb}
-import org.kae.twitterstreaming.credentials.{TwitterCredentials, TwitterCredentialsProvider}
+import org.scalactic.TypeCheckedTripleEquals
+
+import org.kae.twitterstreaming.credentials.TwitterCredentials
 
 /**
  * Signing Twitter requests by delegating to the Scribe library.

@@ -17,6 +17,7 @@ import akka.{Done, NotUsed}
 
 import de.knutwalker.akka.stream.JsonStreamParser
 import io.circe.jawn.CirceSupportParser
+
 import org.kae.twitterstreaming.credentials.TwitterCredentialsProvider
 import org.kae.twitterstreaming.statistics.StatisticsAccumulator
 import org.kae.twitterstreaming.streamcontents.{StallWarning, StreamElement, Tweet, TweetDigest}

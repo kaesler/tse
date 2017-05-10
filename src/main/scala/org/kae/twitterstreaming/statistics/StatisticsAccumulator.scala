@@ -3,7 +3,7 @@ package org.kae.twitterstreaming.statistics
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-import scala.collection.mutable.{Map => MMap}
+import scala.collection.mutable.{Map ⇒ MMap}
 
 import org.kae.twitterstreaming.streamcontents.{Emoji, HashTag, TweetDigest, UrlDomain}
 
