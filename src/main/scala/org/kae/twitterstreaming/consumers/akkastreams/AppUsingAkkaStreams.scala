@@ -81,27 +81,8 @@ object AppUsingAkkaStreams
       byteStrings: Source[ByteString, NotUsed]
   ): Future[Done] = {
 
-    // ByteString -> TweetDigest
-    toTweetDigests(byteStrings)
-
-      // TweetDigest -> StatisticsSnapshot
-      .via(new AccumulateStatistics(accumulator,TimeBetweenStatsReports)).async
-
-      // Run for a finite time.
-      .takeWithin(3.minutes)
-
-      // Ensure helpful error logging.
-      .log("Tweet statistics pipeline")
-
-      // Print stats snapshot
-      .map(_.asText)
-      .runForeach(println)
-  }
-
-  private def toTweetDigests(
-      byteStrings: Source[ByteString, NotUsed]): Source[TweetDigest, NotUsed] =
-
     byteStrings
+
       // ByteString -> Json
       .via {
         import CirceSupportParser._
@@ -125,5 +106,19 @@ object AppUsingAkkaStreams
       .mapAsyncUnordered(4) { tweet =>
         Future.successful(tweet.digest)
       }
+
+      // TweetDigest -> StatisticsSnapshot
+      .via(new AccumulateStatistics(accumulator,TimeBetweenStatsReports)).async
+
+      // Run for a finite time.
+      .takeWithin(30.minutes)
+
+      // Ensure helpful error logging.
+      .log("Tweet statistics pipeline")
+
+      // Print stats snapshot
+      .map(_.asText)
+      .runForeach(println)
+  }
 }
 
