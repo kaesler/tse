@@ -9,6 +9,8 @@ scalaVersion := "2.12.1"
 val AkkaVersion = "2.5.1"
 val AkkaHttpVersion = "10.0.5"
 
+resolvers += "krasserm at bintray" at "http://dl.bintray.com/krasserm/maven"
+
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
   "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion,
@@ -27,7 +29,9 @@ libraryDependencies ++= Seq(
   "io.circe" %% "circe-optics" % "0.7.0",
 
   "co.fs2" %% "fs2-core" % "0.9.5",
-  "co.fs2" %% "fs2-io" % "0.9.5"
+  "co.fs2" %% "fs2-io" % "0.9.5",
+
+  "com.github.krasserm" %% "streamz-converter" % "0.7"
 )
 
 scalacOptions ++= Seq(
