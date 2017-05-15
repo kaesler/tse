@@ -26,12 +26,17 @@ libraryDependencies ++= Seq(
   "de.knutwalker" %% "akka-http-circe" % "3.3.0",
 
   // For analysis of Json ASTs.
-  "io.circe" %% "circe-optics" % "0.7.0",
+  "io.circe" %% "circe-optics" % "0.8.0",
 
   "co.fs2" %% "fs2-core" % "0.9.5",
   "co.fs2" %% "fs2-io" % "0.9.5",
 
-  "com.github.krasserm" %% "streamz-converter" % "0.7"
+  "com.github.krasserm" %% "streamz-converter" % "0.7",
+
+  "org.http4s" %% "http4s-blaze-client" % "0.17.0-M2",
+  "org.http4s" %% "http4s-circe" % "0.17.0-M2",
+  "io.circe" %% "circe-generic" % "0.8.0"
+
 )
 
 scalacOptions ++= Seq(
