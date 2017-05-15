@@ -1,8 +1,6 @@
 package org.kae.twitterstreaming.consumers.http4s
 
 import fs2.{Stream, Task}
-import fs2.io.stdout
-import fs2.text.{lines, utf8Encode}
 
 import io.circe.Json
 import jawnfs2._
@@ -11,6 +9,7 @@ import org.http4s.client.blaze._
 import org.http4s.client.oauth1
 
 import org.kae.twitterstreaming.credentials.{TwitterCredentials, TwitterCredentialsProvider}
+import org.kae.twitterstreaming.streamcontents.{StallWarning, StreamElement, Tweet}
 
 /**
   * Demo app to collect statistics from a Twitter stream using Http4s and FS2 streams.
@@ -24,12 +23,14 @@ object AppUsingHttp4sAndFs2
   // Note: fail here early and hard if no credentials.
   private val creds = TwitterCredentialsProvider.required()
 
-  implicit val f = io.circe.jawn.CirceSupportParser.facade
+  private implicit val facade = io.circe.jawn.CirceSupportParser.facade
 
   // Remember, this `Client` needs to be cleanly shutdown
-  val client = PooledHttp1Client()
+  private val client = PooledHttp1Client()
 
-  val task: Task[Unit] = runc(creds)
+  private val task: Task[Unit] = runFreshPipeline(creds)
+
+  // TODO: recover when response is interrupted by network error.
 
   task.unsafeRun
 
@@ -46,29 +47,35 @@ object AppUsingHttp4sAndFs2
 
   // Sign the incoming `Request`, stream the `Response`, and `parseJsonStream` the `Response`.
   // `sign` returns a `Task`, so we need to `Stream.eval` it to use a for-comprehension.
-  def stream(creds: TwitterCredentials)
+  private def stream(creds: TwitterCredentials)
     (req: Request): Stream[Task, Json] = for {
     sr  <- Stream.eval(sign(creds)(req))
     res <- client.streaming(sr)(resp => resp.body.chunks.parseJsonStream)
   } yield res
 
-  /* Stream the sample statuses.
-   * We map over the Circe `Json` objects to pretty-print them with `spaces2`.
-   * Then we `to` them to fs2's `lines` and the to `stdout` `Sink` to print them.
-   * Finally, when the stream is complete (you hit <crtl-C>), `shutdown` the `client`.
-   */
-  def runc(creds: TwitterCredentials): Task[Unit] = {
+  private def runFreshPipeline(creds: TwitterCredentials): Task[Unit] = {
     val req = Request(
       Method.GET,
       Uri.uri("https://stream.twitter.com/1.1/statuses/sample.json"))
 
-    // TODO: interpret the JSON to stats.
-
     stream(creds)(req)
-      .map(_.spaces2)
-      .through(lines)
-      .through(utf8Encode)
-      .to(stdout)
+      .map(StreamElement.apply)
+      .map {
+        case StallWarning ⇒
+          // logger.warning("Stall warning occurred")
+          StallWarning
+        case other ⇒ other
+      }
+
+      // StreamElement -> Tweet
+      .collect[Tweet] { case t: Tweet => t }
+
+      // Tweet -> TweetDigest
+      // TODO: how to get 4 running concurrently at once here?
+      .map(_.digest)
+
+      // TODO: send TweetDigests through a stats accumulating Pipe
+
       .onFinalize(client.shutdown)
       .run
   }
