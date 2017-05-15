@@ -32,6 +32,8 @@ object AppUsingFs2
     with RequestSigning
     with RequestBuilding {
 
+  sys.error("Not yet implemented fully")
+
   // Note: fail here early and hard if no credentials.
   private val creds = TwitterCredentialsProvider.required()
 
