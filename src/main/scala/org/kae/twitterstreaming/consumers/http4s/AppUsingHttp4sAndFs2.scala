@@ -9,6 +9,7 @@ import org.http4s.client.blaze._
 import org.http4s.client.oauth1
 
 import org.kae.twitterstreaming.credentials.{TwitterCredentials, TwitterCredentialsProvider}
+import org.kae.twitterstreaming.statistics.CumulativeStatistics
 import org.kae.twitterstreaming.streamcontents.{StallWarning, StreamElement, Tweet}
 
 /**
@@ -18,8 +19,6 @@ import org.kae.twitterstreaming.streamcontents.{StallWarning, StreamElement, Twe
 object AppUsingHttp4sAndFs2
   extends App {
 
-  sys.error("Not yet implemented fully")
-
   // Note: fail here early and hard if no credentials.
   private val creds = TwitterCredentialsProvider.required()
 
@@ -28,9 +27,9 @@ object AppUsingHttp4sAndFs2
   // Remember, this `Client` needs to be cleanly shutdown
   private val client = PooledHttp1Client()
 
-  private val task: Task[Unit] = runFreshPipeline(creds)
+  private val task: Task[Unit] = runFreshPipeline(creds, CumulativeStatistics.empty)
 
-  // TODO: recover when response is interrupted by network error.
+  // TODO: How to recover when response is interrupted by network error?
 
   task.unsafeRun
 
@@ -53,7 +52,11 @@ object AppUsingHttp4sAndFs2
     res <- client.streaming(sr)(resp => resp.body.chunks.parseJsonStream)
   } yield res
 
-  private def runFreshPipeline(creds: TwitterCredentials): Task[Unit] = {
+  private def runFreshPipeline(
+      creds: TwitterCredentials,
+      initialStats: CumulativeStatistics
+  ): Task[Unit] = {
+
     val req = Request(
       Method.GET,
       Uri.uri("https://stream.twitter.com/1.1/statuses/sample.json"))
@@ -71,16 +74,23 @@ object AppUsingHttp4sAndFs2
       .collect[Tweet] { case t: Tweet => t }
 
       // Tweet -> TweetDigest
-      // TODO: how to get 4 running concurrently at once here?
+      // TODO: how to get 4 running concurrently at once here ?
       .map(_.digest)
+
+      .scan(initialStats) { (stats, digest) => stats.accumulate(digest) }
 
       // TODO:
       // Strategy:
-      //   - find or write a Stream.scan() combinator
-      //   - produce a Stream[CumulativeStatistics]
       //   - in lieu of a conflate() combinator, pipe through a circular buffer
       //     of length 1
       //   - zip the output of that with clock ticks at the desired cadence
+      //   - print
+
+      .map(_.asText)
+
+      // TODO: This seems wrong.
+      .map(println)
+
       .onFinalize(client.shutdown)
       .run
   }
