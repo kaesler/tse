@@ -57,7 +57,7 @@ object AppUsingAkkaStreams
     // any other reason.
     .onComplete { _ ⇒ system.terminate() }
 
-  private def runFreshPipeline(): Future[Done] = {
+  private def runFreshPipeline(): Future[Done] =
     consumeResponse(initiateResponse(), lastStats.get)
       .recoverWith {
         // Note:  recover from network interruptions by running a freshly
@@ -67,10 +67,8 @@ object AppUsingAkkaStreams
           logger.warning("Recovering from response truncation")
           runFreshPipeline()
       }
-  }
 
-  private def initiateResponse(): Source[ByteString, NotUsed] =
-    signAndSend(Get(streamUrl))
+  private def initiateResponse(): Source[ByteString, NotUsed] = signAndSend(Get(streamUrl))
 
   private def signAndSend(req: HttpRequest): Source[ByteString, NotUsed] =
     Source.fromFutureSource(
@@ -81,7 +79,7 @@ object AppUsingAkkaStreams
   private def consumeResponse(
       byteStrings: Source[ByteString, NotUsed],
       initialStats: CumulativeStatistics
-  ): Future[Done] = {
+  ): Future[Done] =
 
     byteStrings
 
@@ -135,7 +133,6 @@ object AppUsingAkkaStreams
       // Print report.
       .map(_.asText)
       .runForeach(println)
-  }
 }
 
 
