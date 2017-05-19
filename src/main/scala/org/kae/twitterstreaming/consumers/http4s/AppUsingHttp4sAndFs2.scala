@@ -74,8 +74,13 @@ object AppUsingHttp4sAndFs2
       // TODO: how to get 4 running concurrently at once here?
       .map(_.digest)
 
-      // TODO: send TweetDigests through a stats accumulating Pipe
-
+      // TODO:
+      // Strategy:
+      //   - find or write a Stream.scan() combinator
+      //   - produce a Stream[CumulativeStatistics]
+      //   - in lieu of a conflate() combinator, pipe through a circular buffer
+      //     of length 1
+      //   - zip the output of that with clock ticks at the desired cadence
       .onFinalize(client.shutdown)
       .run
   }

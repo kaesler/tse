@@ -1,10 +1,9 @@
 package org.kae.twitterstreaming.consumers.fs2
 
-import java.time.Instant
-
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.Http
@@ -13,7 +12,6 @@ import akka.http.scaladsl.model.{EntityStreamException, HttpRequest}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import akka.{Done, NotUsed}
 
 import fs2.{Stream, Task}
 
@@ -21,7 +19,6 @@ import streamz.converter._
 
 import org.kae.twitterstreaming.consumers.akkastreams.RequestSigning
 import org.kae.twitterstreaming.credentials.TwitterCredentialsProvider
-import org.kae.twitterstreaming.statistics.MutableCumulativeStatistics
 
 /**
   * Demo app to collect statistics from a Twitter stream using Akka HTTP and
@@ -49,10 +46,6 @@ object AppUsingFs2
       "?stall_warnings=true"
 
   private val TimeBetweenStatsReports = 15.seconds
-
-  // Note: this is here outside the pipeline so that it will persist across
-  // restarts of the pipeline due to network glitches.
-  private val accumulator = new MutableCumulativeStatistics(Instant.now)
 
   runFreshPipeline()
     // Note: terminate the ActorSystem and process if the response ends for
