@@ -15,7 +15,7 @@ import org.kae.twitterstreaming.streamcontents.{Emoji, HashTag, TweetDigest, Url
   Array(
     "org.wartremover.warts.Var",
     "org.wartremover.warts.MutableDataStructures"))
-class StatisticsAccumulator(startTime: Instant) {
+class MutableCumulativeStatistics(startTime: Instant) {
 
   private var tweetCount = 0L
   private var tweetsContainingEmoji = 0L

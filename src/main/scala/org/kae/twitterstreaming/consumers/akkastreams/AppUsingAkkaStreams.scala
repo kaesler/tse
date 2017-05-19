@@ -14,13 +14,11 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import akka.{Done, NotUsed}
-
 import de.knutwalker.akka.stream.JsonStreamParser
-import io.circe.jawn.CirceSupportParser
-
+import io.circe.jawn.CirceSupportParser._
 import org.kae.twitterstreaming.credentials.TwitterCredentialsProvider
-import org.kae.twitterstreaming.statistics.StatisticsAccumulator
-import org.kae.twitterstreaming.streamcontents.{StallWarning, StreamElement, Tweet, TweetDigest}
+import org.kae.twitterstreaming.statistics.{CumulativeStatistics, MutableCumulativeStatistics}
+import org.kae.twitterstreaming.streamcontents.{StallWarning, StreamElement, Tweet}
 
 /**
  * Demo app to collect statistics from a Twitter stream using Akka HTTP and
@@ -49,7 +47,7 @@ object AppUsingAkkaStreams
 
   // Note: this is here outside the pipeline so that it will persist across
   // restarts of the pipeline due to network glitches.
-  private val accumulator = new StatisticsAccumulator(Instant.now)
+  private val accumulator = new MutableCumulativeStatistics(Instant.now)
 
   runFreshPipeline()
     // Note: terminate the ActorSystem and process if the response ends for
@@ -57,7 +55,7 @@ object AppUsingAkkaStreams
     .onComplete { _ ⇒ system.terminate() }
 
   private def runFreshPipeline(): Future[Done] = {
-    consumeResponse(initiateResponse())
+    consumeResponseWithoutMutation(initiateResponse())
       .recoverWith {
         // Note:  recover from network interruptions by running a freshly
         // created pipeline.
@@ -85,7 +83,6 @@ object AppUsingAkkaStreams
 
       // ByteString -> Json
       .via {
-        import CirceSupportParser._
         JsonStreamParser.flow
       }.async
 
@@ -120,5 +117,62 @@ object AppUsingAkkaStreams
       .map(_.asText)
       .runForeach(println)
   }
+
+  // Note: Not yet used.
+  private def consumeResponseWithoutMutation(
+      byteStrings: Source[ByteString, NotUsed],
+      initialStats: CumulativeStatistics = CumulativeStatistics.empty
+  ): Future[Done] = {
+
+    byteStrings
+
+      // ByteString -> Json
+      .via {
+        JsonStreamParser.flow
+      }.async
+
+      // Json -> StreamElement
+      .map(StreamElement.apply).async
+
+      // Log any stall warnings.
+      .map {
+        case StallWarning ⇒
+          logger.warning("Stall warning occurred")
+          StallWarning
+        case other ⇒ other
+      }
+
+      // StreamElement -> Tweet
+      .collect[Tweet] { case t: Tweet => t }
+
+      // Tweet -> TweetDigest (in parallel)
+      .mapAsyncUnordered(4) { tweet => Future.successful(tweet.digest) }
+
+      // TweetDigest -> CumulativeStatistics
+      .scan(initialStats) { (accum, digest) => accum.accumulate(digest) }
+
+      // Keep the most recent CumulativeStatistics
+      .conflate { (_, nextCumulativeStats) => nextCumulativeStats }
+
+      // Zip with a clock tick to emit at regular cadence.
+      .zip(Source.tick(TimeBetweenStatsReports, TimeBetweenStatsReports, ()))
+
+      // Run for a finite time.
+      .takeWithin(30.minutes)
+
+      // Ensure helpful error logging.
+      .log("Tweet statistics pipeline")
+
+      // Remove the tick -> CumulativeStatistics
+      .map(_._1)
+
+      // Remove initial empty stats.
+      .filter(stats => stats.endTime !== stats.startTime)
+
+      // Print report.
+      .map(_.asText)
+      .runForeach(println)
+  }
 }
+
 

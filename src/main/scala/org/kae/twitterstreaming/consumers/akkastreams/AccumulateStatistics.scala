@@ -5,7 +5,7 @@ import scala.concurrent.duration.FiniteDuration
 import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler, TimerGraphStageLogic}
 import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
 
-import org.kae.twitterstreaming.statistics.{StatisticsAccumulator, StatisticsSnapshot}
+import org.kae.twitterstreaming.statistics.{MutableCumulativeStatistics, StatisticsSnapshot}
 import org.kae.twitterstreaming.streamcontents.TweetDigest
 
 /**
@@ -13,11 +13,11 @@ import org.kae.twitterstreaming.streamcontents.TweetDigest
  * [[TweetDigest]]s derived from a Twitter stream, and emits a stream of
  * [[StatisticsSnapshot]]s at a configurable output cadence.
  *
- * @param accumulator the [[StatisticsAccumulator]] to update
+ * @param accumulator the [[MutableCumulativeStatistics]] to update
  * @param periodBetweenOutputs time between outputs
  */
 class AccumulateStatistics (
-    accumulator: StatisticsAccumulator,
+    accumulator: MutableCumulativeStatistics,
     periodBetweenOutputs: FiniteDuration)
   extends GraphStage[FlowShape[TweetDigest, StatisticsSnapshot]] {
 
