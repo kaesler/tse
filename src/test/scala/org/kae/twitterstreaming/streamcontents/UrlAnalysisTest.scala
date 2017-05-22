@@ -20,7 +20,7 @@ class UrlAnalysisTest
     }
   }
 
-  "UrlAnalysis.parseAsHttpUrl" should "correctly accept ivalid URLs" in {
+  "UrlAnalysis.parseAsHttpUrl" should "correctly accept valid URLs" in {
     List(
       "https://",
       "http://kevinesler.com",
