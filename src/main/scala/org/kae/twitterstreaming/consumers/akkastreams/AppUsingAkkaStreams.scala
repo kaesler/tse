@@ -15,6 +15,8 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 
+import cats.implicits._
+
 import de.knutwalker.akka.stream.JsonStreamParser
 import io.circe.jawn.CirceSupportParser._
 
@@ -30,6 +32,7 @@ object AppUsingAkkaStreams
   extends App
   with RequestSigning
   with RequestBuilding {
+
 
   // Note: fail here early and hard if no credentials.
   private val creds = TwitterCredentialsProvider.required()

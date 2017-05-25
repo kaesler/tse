@@ -3,11 +3,9 @@ package org.kae.twitterstreaming.statistics
 import java.time.{Instant, ZoneId}
 
 import cats.Monoid
-import org.scalactic.TypeCheckedTripleEquals
+import cats.implicits._
 
 import org.kae.twitterstreaming.streamcontents.{Emoji, HashTag, UrlDomain}
-
-
 
 /**
  * Immutable class in which to accumulate statistics.
@@ -32,14 +30,14 @@ final case class Statistics(
     emojiOccurrences: Map[Emoji, Long],
     hashTagOccurrences: Map[HashTag, Long],
     urlDomainOccurrences: Map[UrlDomain, Long]
-) extends TypeCheckedTripleEquals {
+) {
 
   import Statistics._
 
   /**
     * @return true iff the instance is not empty
     */
-  def nonEmpty: Boolean = tweetCount != 0
+  def nonEmpty: Boolean = tweetCount =!= 0
 
   /**
    * @return true iff the stats are for a non-zero interval of time
@@ -56,36 +54,39 @@ final case class Statistics(
    * @param that the other instance
    * @return the combination of the two sets of statistics
    */
-  def combine(that: Statistics): Statistics = Statistics(
-    earliestTime = (this.earliestTime.toList ++ that.earliestTime.toList)
-      .sortBy(_.toEpochMilli)
-      .headOption,
-    latestTime = (this.earliestTime.toList ++ that.earliestTime.toList)
-      .sortBy(- _.toEpochMilli)
-      .headOption,
-    tweetCount = this.tweetCount + that.tweetCount,
-    tweetsContainingEmoji = this.tweetsContainingEmoji + that.tweetsContainingEmoji,
-    tweetsContainingUrl = this.tweetsContainingUrl + that.tweetsContainingUrl,
-    tweetsContainingPhotoUrl = this.tweetsContainingPhotoUrl + that.tweetsContainingPhotoUrl,
-    emojiOccurrences =
-      combineOccurrences(this.emojiOccurrences, that.emojiOccurrences),
-    hashTagOccurrences =
-      combineOccurrences(this.hashTagOccurrences, that.hashTagOccurrences),
-    urlDomainOccurrences =
-      combineOccurrences(this.urlDomainOccurrences, that.urlDomainOccurrences)
-  )
+  def combine(that: Statistics): Statistics = {
 
-  private def combineOccurrences[T](
-      l: Map[T, Long],
-      r: Map[T, Long]): Map[T, Long] = {
+    def combineOccurrences[T](
+        l: Map[T, Long],
+        r: Map[T, Long]): Map[T, Long] = {
 
-    r.foldLeft(l) { case (mapToUpdate, (t, countIncrement)) =>
-      val newValue =
-        l.get(t)
-          .map { oldCount => oldCount + countIncrement }
-          .getOrElse(countIncrement)
-      mapToUpdate.updated(t, newValue)
+      r.foldLeft(l) { case (mapToUpdate, (t, countIncrement)) =>
+        val newValue =
+          l.get(t)
+            .map { oldCount => oldCount + countIncrement }
+            .getOrElse(countIncrement)
+        mapToUpdate.updated(t, newValue)
+      }
     }
+
+    Statistics(
+      earliestTime = (this.earliestTime.toList ++ that.earliestTime.toList)
+        .sortBy(_.toEpochMilli)
+        .headOption,
+      latestTime = (this.earliestTime.toList ++ that.earliestTime.toList)
+        .sortBy(- _.toEpochMilli)
+        .headOption,
+      tweetCount = this.tweetCount + that.tweetCount,
+      tweetsContainingEmoji = this.tweetsContainingEmoji + that.tweetsContainingEmoji,
+      tweetsContainingUrl = this.tweetsContainingUrl + that.tweetsContainingUrl,
+      tweetsContainingPhotoUrl = this.tweetsContainingPhotoUrl + that.tweetsContainingPhotoUrl,
+      emojiOccurrences =
+        combineOccurrences(this.emojiOccurrences, that.emojiOccurrences),
+      hashTagOccurrences =
+        combineOccurrences(this.hashTagOccurrences, that.hashTagOccurrences),
+      urlDomainOccurrences =
+        combineOccurrences(this.urlDomainOccurrences, that.urlDomainOccurrences)
+    )
   }
 
   /**
@@ -95,7 +96,7 @@ final case class Statistics(
 
     def carefulPercentageOfTweets(numerator: Long): Double =
     // Avoid dividing by zero.
-      if (tweetCount !== 0L) {
+      if (tweetCount =!= 0L) {
         (numerator * 100.0)/tweetCount
       } else {
         0L
@@ -175,8 +176,7 @@ object Statistics {
 
   private val tz = ZoneId.systemDefault()
 
-
-  val Empty = Statistics(
+  val Empty: Statistics = Statistics(
     None,
     None,
     0L,

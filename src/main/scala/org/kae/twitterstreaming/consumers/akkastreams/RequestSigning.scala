@@ -4,20 +4,22 @@ import scala.collection.JavaConverters._
 
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.{Authorization, RawHeader}
-import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
+import akka.http.scaladsl.model.{HttpMethod, HttpMethods, HttpRequest}
+
+import cats.implicits._
+import cats.kernel.Eq
 
 import com.github.scribejava.apis.TwitterApi
 import com.github.scribejava.core.builder.ServiceBuilder
 import com.github.scribejava.core.model.{OAuth1AccessToken, OAuthRequest, Verb}
-import org.scalactic.TypeCheckedTripleEquals
 
 import org.kae.twitterstreaming.credentials.TwitterCredentials
 
 /**
  * Signing Twitter requests by delegating to the Scribe library.
  */
-trait RequestSigning
-  extends TypeCheckedTripleEquals {
+trait RequestSigning {
+
 
   /**
    * Sign an [[HttpRequest]] for Twitter by creating an equivalent [[OAuthRequest]],
@@ -55,6 +57,7 @@ trait RequestSigning
   }
 
   private def equivalentScribeRequest(akkaReq: HttpRequest): OAuthRequest = {
+    implicit val eqq: Eq[HttpMethod] = Eq.fromUniversalEquals[HttpMethod]
     require(akkaReq.method === HttpMethods.GET)
 
     val urlWithoutQueryParams = akkaReq.uri.withQuery(Query.Empty).toString

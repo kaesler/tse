@@ -20,6 +20,8 @@ import streamz.converter._
 import org.kae.twitterstreaming.consumers.akkastreams.RequestSigning
 import org.kae.twitterstreaming.credentials.TwitterCredentialsProvider
 
+import cats.implicits._
+
 /**
   * Demo app to collect statistics from a Twitter stream using Akka HTTP and
   * FS2 streams.
