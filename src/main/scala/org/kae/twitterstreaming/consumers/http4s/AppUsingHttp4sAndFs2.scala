@@ -9,7 +9,7 @@ import org.http4s.client.blaze._
 import org.http4s.client.oauth1
 
 import org.kae.twitterstreaming.credentials.{TwitterCredentials, TwitterCredentialsProvider}
-import org.kae.twitterstreaming.statistics.CumulativeStatistics
+import org.kae.twitterstreaming.statistics.Statistics
 import org.kae.twitterstreaming.streamcontents.{StallWarning, StreamElement, Tweet}
 
 /**
@@ -27,7 +27,7 @@ object AppUsingHttp4sAndFs2
   // Remember, this `Client` needs to be cleanly shutdown
   private val client = PooledHttp1Client()
 
-  private val task: Task[Unit] = runFreshPipeline(creds, CumulativeStatistics.empty)
+  private val task: Task[Unit] = runFreshPipeline(creds, Statistics.Empty)
 
   // TODO: How to recover when response is interrupted by network error?
 
@@ -54,7 +54,7 @@ object AppUsingHttp4sAndFs2
 
   private def runFreshPipeline(
       creds: TwitterCredentials,
-      initialStats: CumulativeStatistics
+      initialStats: Statistics
   ): Task[Unit] = {
 
     val req = Request(
@@ -73,11 +73,14 @@ object AppUsingHttp4sAndFs2
       // StreamElement -> Tweet
       .collect[Tweet] { case t: Tweet => t }
 
-      // Tweet -> TweetDigest
+      // Tweet -> Statistics
       // TODO: how to get 4 running concurrently at once here ?
-      .map(_.digest)
+      .map(_.statistics)
 
-      .scan(initialStats) { (stats, digest) => stats.accumulate(digest) }
+      // Statistics -> Statistics (total)
+      .scan(initialStats) { (accumulatedStats, singleTweetStats) =>
+        accumulatedStats.combine(singleTweetStats)
+      }
 
       // TODO:
       // Strategy:

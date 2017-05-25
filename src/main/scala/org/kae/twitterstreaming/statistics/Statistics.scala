@@ -37,6 +37,11 @@ final case class Statistics(
   import Statistics._
 
   /**
+    * @return true iff the instance is not empty
+    */
+  def nonEmpty: Boolean = tweetCount != 0
+
+  /**
    * @return true iff the stats are for a non-zero interval of time
    */
   def isForInterval: Boolean = (earliestTime, latestTime) match {
@@ -97,7 +102,7 @@ final case class Statistics(
       }
 
     val secondsElapsed = (earliestTime, latestTime) match {
-      case (Some(start), Some(end)) => (start.toEpochMilli - end.toEpochMilli)/1000
+      case (Some(start), Some(end)) => (end.toEpochMilli - start.toEpochMilli)/1000
 
       case _ => 0L
     }

@@ -19,7 +19,7 @@ import de.knutwalker.akka.stream.JsonStreamParser
 import io.circe.jawn.CirceSupportParser._
 
 import org.kae.twitterstreaming.credentials.TwitterCredentialsProvider
-import org.kae.twitterstreaming.statistics.CumulativeStatistics
+import org.kae.twitterstreaming.statistics.Statistics
 import org.kae.twitterstreaming.streamcontents.{StallWarning, StreamElement, Tweet}
 
 /**
@@ -50,7 +50,7 @@ object AppUsingAkkaStreams
   // TODO: Avoid this assignment and instead, on network failure make the
   // pipeline materialize the last stats computed so we can feed it back in
   // to a fresh pipeline.
-  private val lastStats = new AtomicReference(CumulativeStatistics.empty)
+  private val lastStats = new AtomicReference(Statistics.Empty)
 
   runFreshPipeline()
     // Note: terminate the ActorSystem and process if the response ends for
@@ -78,7 +78,7 @@ object AppUsingAkkaStreams
 
   private def consumeResponse(
       byteStrings: Source[ByteString, NotUsed],
-      initialStats: CumulativeStatistics
+      initialStats: Statistics
   ): Future[Done] =
 
     byteStrings
@@ -101,13 +101,15 @@ object AppUsingAkkaStreams
       // StreamElement -> Tweet
       .collect[Tweet] { case t: Tweet => t }
 
-      // Tweet -> TweetDigest (in parallel)
-      .mapAsyncUnordered(4) { tweet => Future { tweet.digest } }
+      // Tweet -> Statistics (in parallel)
+      .mapAsyncUnordered(4) { tweet => Future { tweet.statistics } }
 
-      // TweetDigest -> CumulativeStatistics
-      .scan(initialStats) { (stats, digest) => stats.accumulate(digest) }.async
+      // Statistics -> Statistics (total)
+      .scan(initialStats) { (accumulatedStats, singleTweetStats) =>
+        accumulatedStats combine singleTweetStats
+      }.async
 
-      // Keep the most recent CumulativeStatistics
+      // Keep the most recent Statistics
       .conflate { (_, nextStats) =>
         // Save last stats computed in case the pipeline is restarted.
         lastStats.set(nextStats)
@@ -128,7 +130,7 @@ object AppUsingAkkaStreams
       .map(_._1)
 
       // Hide initial empty stats.
-      .filter { stats => stats.endTime !== stats.startTime }
+      .filter(_.nonEmpty)
 
       // Print report.
       .map(_.asText)

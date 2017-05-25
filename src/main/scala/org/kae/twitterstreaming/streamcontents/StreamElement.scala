@@ -1,5 +1,7 @@
 package org.kae.twitterstreaming.streamcontents
 
+import java.time.Instant
+
 import scala.collection.JavaConverters._
 
 import akka.http.scaladsl.model.Uri
@@ -7,6 +9,8 @@ import akka.http.scaladsl.model.Uri
 import com.vdurmont.emoji.EmojiParser
 import io.circe.Json
 import io.circe.optics.JsonPath._
+
+import org.kae.twitterstreaming.statistics.Statistics
 
 /**
  * Base trait for all elements in the stream from Twitter.
@@ -21,6 +25,37 @@ sealed trait StreamElement
 final case class Tweet(json: Json)
   extends StreamElement
   with UrlAnalysis {
+
+  /**
+    * @return a [[Statistics]] instance for just this single [[Tweet]].
+    */
+  def statistics: Statistics = {
+
+    def occurrencesInList[T](ts: List[T]): Map[T, Long] =
+      ts
+        .groupBy(identity)
+        .map { case (t, occurrences) ⇒
+          t -> occurrences.size.toLong
+        }
+
+    Statistics(
+      earliestTime = Some(Instant.now),
+      latestTime = Some(Instant.now),
+      tweetCount = 1L,
+      tweetsContainingEmoji = emojis.headOption.size,
+      tweetsContainingUrl = urls.headOption.size,
+      tweetsContainingPhotoUrl = {
+        if (containsPhotoReference) {
+          1L
+        } else {
+          0L
+        }
+      },
+      emojiOccurrences = occurrencesInList(emojis),
+      hashTagOccurrences = occurrencesInList(hashTags),
+      urlDomainOccurrences = occurrencesInList(urlDomains)
+    )
+  }
 
   /**
     * Extract a digest of the tween

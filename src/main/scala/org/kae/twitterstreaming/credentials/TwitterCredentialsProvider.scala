@@ -5,8 +5,7 @@ import java.util.Properties
 
 import scala.util.Try
 
-object TwitterCredentialsProvider
-  extends (() ⇒ Option[TwitterCredentials]) {
+object TwitterCredentialsProvider {
 
   private val relPath = ".twitter_api/credentials"
 
