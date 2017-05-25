@@ -48,8 +48,8 @@ final case class Statistics(
    * A method that combines two instances in such a way as to satisfy the rules
    * for a commutative monoid.
    *
-   * @param that
-   * @return
+   * @param that the other instance
+   * @return the combination of the two sets of statistics
    */
   def combine(that: Statistics): Statistics = Statistics(
     earliestTime = (this.earliestTime.toList ++ that.earliestTime.toList)

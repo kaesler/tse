@@ -102,7 +102,7 @@ object AppUsingAkkaStreams
       .collect[Tweet] { case t: Tweet => t }
 
       // Tweet -> TweetDigest (in parallel)
-      .mapAsyncUnordered(4) { tweet => Future.successful(tweet.digest) }
+      .mapAsyncUnordered(4) { tweet => Future { tweet.digest } }
 
       // TweetDigest -> CumulativeStatistics
       .scan(initialStats) { (stats, digest) => stats.accumulate(digest) }.async
