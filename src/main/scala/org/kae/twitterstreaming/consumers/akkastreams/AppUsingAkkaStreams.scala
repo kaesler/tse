@@ -126,7 +126,7 @@ object AppUsingAkkaStreams
       // Ensure helpful error logging.
       .log("Tweet statistics pipeline")
 
-      // Remove the tick -> CumulativeStatistics
+      // Remove the tick -> Statistics
       .map(_._1)
 
       // Hide initial empty stats.

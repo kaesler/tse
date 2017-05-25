@@ -79,7 +79,7 @@ object AppUsingHttp4sAndFs2
 
       // Statistics -> Statistics (total)
       .scan(initialStats) { (accumulatedStats, singleTweetStats) =>
-        accumulatedStats.combine(singleTweetStats)
+        accumulatedStats combine singleTweetStats
       }
 
       // TODO:
