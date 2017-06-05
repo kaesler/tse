@@ -105,6 +105,8 @@ object AppUsingAkkaStreams
       .collect[Tweet] { case t: Tweet => t }
 
       // Tweet -> Statistics (in parallel)
+      // Note: Commutativity of [[Statistics#combine]] ensures that
+      // the re-ordering here is permissible.
       .mapAsyncUnordered(4) { tweet => Future { tweet.statistics } }
 
       // Statistics -> Statistics (total)
