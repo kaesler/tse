@@ -1,22 +1,20 @@
 package org.kae.twitterstreaming.consumers.akkastreams
 
-import java.util.concurrent.atomic.AtomicReference
-
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.util.{Failure, Success, Try}
 
-import akka.{Done, NotUsed}
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model.{EntityStreamException, HttpRequest}
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.util.ByteString
 
 import cats.implicits._
-
 import de.knutwalker.akka.stream.JsonStreamParser
 import io.circe.jawn.CirceSupportParser._
 
@@ -25,13 +23,13 @@ import org.kae.twitterstreaming.statistics.Statistics
 import org.kae.twitterstreaming.streamcontents.{StallWarning, StreamElement, Tweet}
 
 /**
- * Demo app to collect statistics from a Twitter stream using Akka HTTP and
- * Akka Streams.
- */
+  * Demo app to collect statistics from a Twitter stream using Akka HTTP and
+  * Akka Streams.
+  */
 object AppUsingAkkaStreams
-  extends App
-  with RequestSigning
-  with RequestBuilding {
+    extends App
+    with RequestSigning
+    with RequestBuilding {
 
 
   // Note: fail here early and hard if no credentials.
@@ -46,30 +44,28 @@ object AppUsingAkkaStreams
 
   private val streamUrl =
     "https://stream.twitter.com/1.1/statuses/sample.json" +
-      "?stall_warnings=true"
+  "?stall_warnings=true"
 
   private val TimeBetweenStatsReports = 15.seconds
 
-  // TODO: Avoid this assignment and instead, on network failure make the
-  // pipeline materialize the last stats computed so we can feed it back in
-  // to a fresh pipeline.
-  private val lastStats = new AtomicReference(Statistics.Empty)
+  runFreshPipeline(Statistics.Empty)
+    .onComplete {
+      case Success(lastStatsSeen) ⇒
+        // Note: if pipeline stops, restart it with accumulated stats.
+        logger.warning(s"Restarting pipeline after ${lastStatsSeen.tweetCount} tweets")
+        runFreshPipeline(lastStatsSeen)
 
-  runFreshPipeline()
-    // Note: terminate the ActorSystem and process if the response ends for
-    // any other reason.
-    .onComplete { _ ⇒ system.terminate() }
+      case Failure(_: NoSuchElementException) ⇒
+        logger.warning(s"Restarting pipeline before first tweet was seen")
+        runFreshPipeline(Statistics.Empty)
 
-  private def runFreshPipeline(): Future[Done] =
-    consumeResponse(initiateResponse(), lastStats.get)
-      .recoverWith {
-        // Note:  recover from network interruptions by running a freshly
-        // created pipeline.
-        case ese: EntityStreamException
-          if ese.getMessage === "Entity stream truncation" =>
-          logger.warning("Recovering from response truncation")
-          runFreshPipeline()
-      }
+      case Failure(t) ⇒
+        logger.error(t, "")
+        system.terminate()
+    }
+
+  private def runFreshPipeline(startingStats: Statistics): Future[Statistics] =
+    consumeResponse2(initiateResponse(), startingStats)
 
   private def initiateResponse(): Source[ByteString, NotUsed] = signAndSend(Get(streamUrl))
 
@@ -79,10 +75,10 @@ object AppUsingAkkaStreams
         .map(_.entity.dataBytes))
       .mapMaterializedValue(_ ⇒ NotUsed)
 
-  private def consumeResponse(
-      byteStrings: Source[ByteString, NotUsed],
-      initialStats: Statistics
-  ): Future[Done] =
+  private def consumeResponse2(
+    byteStrings: Source[ByteString, NotUsed],
+    initialStats: Statistics
+  ): Future[Statistics] = {
 
     byteStrings
 
@@ -102,44 +98,60 @@ object AppUsingAkkaStreams
       }
 
       // StreamElement -> Tweet
-      .collect[Tweet] { case t: Tweet => t }
+      .collect[Try[Tweet]] { case t: Tweet => Success(t) }
+
+      // Arrange for the stream to just end if a network error occurs.
+      // Its completion will materialize a [[Statistics]] which can be used
+      // as the initial value for a fresh pipeline.
+      .recover {
+        case ese: EntityStreamException
+          if ese.getMessage === "Entity stream truncation" =>
+            logger.warning("Stream truncated by error and will be restarted")
+          Failure[Tweet](ese)
+      }
+      .takeWhile(_.isSuccess)
+      .collect {
+        case Success(tweet) ⇒ tweet
+      }
 
       // Tweet -> Statistics (in parallel)
       // Note: Commutativity of [[Statistics#combine]] ensures that
       // the re-ordering here is permissible.
-      .mapAsyncUnordered(4) { tweet => Future { tweet.statistics } }
+      .mapAsyncUnordered(4) { tweet =>
+        Future { tweet.statistics }
+      }
 
       // Statistics -> Statistics (total)
       .scan(initialStats) { (accumulatedStats, singleTweetStats) =>
         accumulatedStats combine singleTweetStats
       }.async
 
-      // Keep the most recent Statistics
-      .conflate { (_, nextStats) =>
-        // Save last stats computed in case the pipeline is restarted.
-        lastStats.set(nextStats)
-
-        nextStats
-      }
+      // Keep the most recent Statistics until a tick is ready to zip it with.
+      .conflate { (_, nextStats) =>  nextStats }
 
       // Zip with a clock tick to emit at regular cadence.
       .zip(Source.tick(TimeBetweenStatsReports, TimeBetweenStatsReports, ()))
 
-      // Run for a finite time.
-      .takeWithin(30.minutes)
+      // Remove the tick -> Statistics
+      .map[Statistics]{ case (stats, _ ) ⇒ stats }
 
       // Ensure helpful error logging.
       .log("Tweet statistics pipeline")
-
-      // Remove the tick -> Statistics
-      .map(_._1)
 
       // Hide initial empty stats.
       .filter(_.nonEmpty)
 
       // Print report.
-      .map(_.asText)
-      .runForeach(println)
+      .map { stats ⇒ println(stats.asText); stats }
+
+      // Run for a finite time.
+      .takeWithin(30.minutes)
+
+      // Materialize the last [[Statistics]] seen, if any.
+      .toMat(Sink.last)(Keep.right)
+
+      .run()
+  }
 }
 
 
