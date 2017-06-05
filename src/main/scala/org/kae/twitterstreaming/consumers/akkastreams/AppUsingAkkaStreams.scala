@@ -65,7 +65,7 @@ object AppUsingAkkaStreams
     }
 
   private def runFreshPipeline(startingStats: Statistics): Future[Statistics] =
-    consumeResponse2(initiateResponse(), startingStats)
+    consumeResponse(initiateResponse(), startingStats)
 
   private def initiateResponse(): Source[ByteString, NotUsed] = signAndSend(Get(streamUrl))
 
@@ -75,7 +75,7 @@ object AppUsingAkkaStreams
         .map(_.entity.dataBytes))
       .mapMaterializedValue(_ ⇒ NotUsed)
 
-  private def consumeResponse2(
+  private def consumeResponse(
     byteStrings: Source[ByteString, NotUsed],
     initialStats: Statistics
   ): Future[Statistics] = {
@@ -98,11 +98,11 @@ object AppUsingAkkaStreams
       }
 
       // StreamElement -> Tweet
-      .collect[Try[Tweet]] { case t: Tweet => Success(t) }
-
+      //
       // Arrange for the stream to just end if a network error occurs.
-      // Its completion will materialize a [[Statistics]] which can be used
+      // Its completion will materialize the last-seen [[Statistics]] which can be used
       // as the initial value for a fresh pipeline.
+      .collect[Try[Tweet]] { case t: Tweet => Success(t) }
       .recover {
         case ese: EntityStreamException
           if ese.getMessage === "Entity stream truncation" =>
@@ -143,9 +143,6 @@ object AppUsingAkkaStreams
 
       // Print report.
       .map { stats ⇒ println(stats.asText); stats }
-
-      // Run for a finite time.
-      .takeWithin(30.minutes)
 
       // Materialize the last [[Statistics]] seen, if any.
       .toMat(Sink.last)(Keep.right)
